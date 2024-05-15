@@ -1,36 +1,24 @@
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
-
 public class Lastnik {
-    private final StringProperty ime;
-    private final StringProperty priimek;
+    private String ime;
+    private String priimek;
 
     public Lastnik(String ime, String priimek) {
-        this.ime = new SimpleStringProperty(ime);
-        this.priimek = new SimpleStringProperty(priimek);
+        this.ime = ime;
+        this.priimek = priimek;
     }
 
+    // Dodaj getterja za ime in priimek
     public String getIme() {
-        return ime.get();
-    }
-
-    public StringProperty imeProperty() {
         return ime;
     }
 
-    public void setIme(String ime) {
-        this.ime.set(ime);
-    }
-
     public String getPriimek() {
-        return priimek.get();
-    }
-
-    public StringProperty priimekProperty() {
         return priimek;
     }
 
-    public void setPriimek(String priimek) {
-        this.priimek.set(priimek);
+    // Metoda za lepši izpis lastnika
+    @Override
+    public String toString() {
+        return ime + " " + priimek;
     }
 }
