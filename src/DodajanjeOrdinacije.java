@@ -117,7 +117,7 @@ public class DodajanjeOrdinacije {
                     e.printStackTrace();
                 }
             }
-        });
+        });//test
 
         root.getChildren().addAll(imePriimekBox, imeOrdinacijeField, stZaposlenihField, naslovField, telefonField, emailField, krajComboBox, dodajBtn);
 
