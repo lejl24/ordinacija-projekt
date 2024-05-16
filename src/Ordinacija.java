@@ -1,44 +1,59 @@
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
-
 public class Ordinacija {
-    private final StringProperty ime;
-    private final StringProperty lastnik;
-    private final StringProperty naslov;
-    private final StringProperty telefon;
-    private final StringProperty email;
-    private final StringProperty kraj;
+    private int id;
+    private String ime;
+    private String naslov;
+    private String telefon;
+    private String email;
+    private int stZaposlenih;
+    private int lastnikId;
+    private String lastnikIme;
+    private String lastnikPriimek;
 
-    public Ordinacija(String ime, String lastnik, String naslov, String telefon, String email, String kraj) {
-        this.ime = new SimpleStringProperty(ime);
-        this.lastnik = new SimpleStringProperty(lastnik);
-        this.naslov = new SimpleStringProperty(naslov);
-        this.telefon = new SimpleStringProperty(telefon);
-        this.email = new SimpleStringProperty(email);
-        this.kraj = new SimpleStringProperty(kraj);
+    public Ordinacija(int id, String ime, String naslov, String telefon, String email, int stZaposlenih, int lastnikId, String lastnikIme, String lastnikPriimek) {
+        this.id = id;
+        this.ime = ime;
+        this.naslov = naslov;
+        this.telefon = telefon;
+        this.email = email;
+        this.stZaposlenih = stZaposlenih;
+        this.lastnikId = lastnikId;
+        this.lastnikIme = lastnikIme;
+        this.lastnikPriimek = lastnikPriimek;
     }
 
-    public StringProperty imeProperty() {
+    public int getId() {
+        return id;
+    }
+
+    public String getIme() {
         return ime;
     }
 
-    public StringProperty lastnikProperty() {
-        return lastnik;
-    }
-
-    public StringProperty naslovProperty() {
+    public String getNaslov() {
         return naslov;
     }
 
-    public StringProperty telefonProperty() {
+    public String getTelefon() {
         return telefon;
     }
 
-    public StringProperty emailProperty() {
+    public String getEmail() {
         return email;
     }
 
-    public StringProperty krajProperty() {
-        return kraj;
+    public int getStZaposlenih() {
+        return stZaposlenih;
+    }
+
+    public int getLastnikId() {
+        return lastnikId;
+    }
+
+    public String getLastnikIme() {
+        return lastnikIme;
+    }
+
+    public String getLastnikPriimek() {
+        return lastnikPriimek;
     }
 }
