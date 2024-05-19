@@ -1,24 +1,19 @@
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.geometry.Insets;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.control.*;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
-import javafx.scene.control.TableCell;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 
 public class Main extends Application {
-    // Podatki za povezavo na strežnik PostgreSQL
     static final String PGURL = "jdbc:postgresql://ep-empty-bonus-a26htj4v.eu-central-1.aws.neon.tech/databaza?sslmode=require";
     static final String PGUSER = "databaza_owner";
     static final String PGPASSWORD = "p9aAuiRvMYE5";
@@ -29,23 +24,24 @@ public class Main extends Application {
     @Override
     public void start(Stage primaryStage) {
         table = new TableView<>();
+        data = FXCollections.observableArrayList();
 
         TableColumn<Ordinacija, String> columnIme = new TableColumn<>("Ime");
-        columnIme.setCellValueFactory(new PropertyValueFactory<>("ime"));
+        columnIme.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getIme()));
         columnIme.setPrefWidth(150);
 
         TableColumn<Ordinacija, String> columnLastnik = new TableColumn<>("Lastnik");
-        columnLastnik.setCellValueFactory(new PropertyValueFactory<>("lastnikIme"));
+        columnLastnik.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getLastnikIme()));
 
         TableColumn<Ordinacija, String> columnNaslov = new TableColumn<>("Naslov");
-        columnNaslov.setCellValueFactory(new PropertyValueFactory<>("naslov"));
+        columnNaslov.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getNaslov()));
         columnNaslov.setPrefWidth(200);
 
         TableColumn<Ordinacija, String> columnTelefon = new TableColumn<>("Telefon");
-        columnTelefon.setCellValueFactory(new PropertyValueFactory<>("telefon"));
+        columnTelefon.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getTelefon()));
 
         TableColumn<Ordinacija, String> columnEmail = new TableColumn<>("Email");
-        columnEmail.setCellValueFactory(new PropertyValueFactory<>("email"));
+        columnEmail.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getEmail()));
 
         TableColumn<Ordinacija, Void> columnUredi = new TableColumn<>("Uredi");
         columnUredi.setCellFactory(param -> new TableCell<>() {
@@ -106,33 +102,33 @@ public class Main extends Application {
         table.getColumns().addAll(columnIme, columnLastnik, columnNaslov, columnTelefon, columnEmail, columnUredi, columnIzbrisi);
 
         VBox root = new VBox(table);
-        Scene scene = new Scene(root, 800, 600);
+
+        Button dodajOrdinacijoBtn = new Button("Dodaj ordinacijo");
+        DodajanjeOrdinacije dodajanjeOrdinacije = new DodajanjeOrdinacije();
+        dodajOrdinacijoBtn.setOnAction(event -> {
+            dodajanjeOrdinacije.prikaziOknoDodajanjaOrdinacije();
+            refreshTable();
+        });
+
+        HBox buttonBox = new HBox(10.0, dodajOrdinacijoBtn);
+        buttonBox.setPadding(new Insets(10.0));
+        HBox.setHgrow(dodajOrdinacijoBtn, Priority.ALWAYS);
+
+        VBox layout = new VBox(10.0, table, buttonBox);
+        layout.setPadding(new Insets(10.0));
+        Scene scene = new Scene(layout, 800, 600);
 
         primaryStage.setScene(scene);
+        primaryStage.setTitle("Ordinacije");
         primaryStage.show();
 
-        // Povezava s podatkovno bazo
         loadData();
-
-        // Gumb za dodajanje nove ordinacije
-        Button dodajOrdinacijoBtn = new Button("Dodaj ordinacijo");
-        DodajanjeOrdinacije dodajanjeOrdinacije = new DodajanjeOrdinacije(null); // Initialize with a null connection
-        dodajOrdinacijoBtn.setOnAction(event -> {
-            try (Connection conn = DriverManager.getConnection(PGURL, PGUSER, PGPASSWORD)) {
-                dodajanjeOrdinacije.setConnection(conn);
-                dodajanjeOrdinacije.prikaziOknoDodajanjaOrdinacije();
-                refreshTable();
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        });
-        root.getChildren().add(dodajOrdinacijoBtn);
     }
 
     private void loadData() {
         new Thread(() -> {
             try (Connection conn = DriverManager.getConnection(PGURL, PGUSER, PGPASSWORD)) {
-                data = FXCollections.observableArrayList();
+                data.clear();
                 String sql = "SELECT o.id, o.ime AS ime_ordinacije, o.naslov AS naslov_ordinacije, o.telefon, o.email, o.st_zaposlenih, o.lastnik_id, " +
                         "l.ime AS lastnik_ime, l.priimek AS lastnik_priimek " +
                         "FROM ordinacije o " +
@@ -164,9 +160,5 @@ public class Main extends Application {
 
     private void refreshTable() {
         loadData();
-    }
-
-    public static void main(String[] args) {
-        launch(args);
     }
 }
