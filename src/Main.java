@@ -1,5 +1,6 @@
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -26,22 +27,29 @@ public class Main extends Application {
         table = new TableView<>();
         data = FXCollections.observableArrayList();
 
-        TableColumn<Ordinacija, String> columnIme = new TableColumn<>("Ime");
+        TableColumn<Ordinacija, String> columnIme = new TableColumn<>("Ordinacija");
         columnIme.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getIme()));
-        columnIme.setPrefWidth(150);
+        columnIme.setPrefWidth(135); // 90% of original 150
 
         TableColumn<Ordinacija, String> columnLastnik = new TableColumn<>("Lastnik");
-        columnLastnik.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getLastnikIme()));
+        columnLastnik.setCellValueFactory(cellData -> new SimpleStringProperty(
+                cellData.getValue().getLastnikIme() + " " + cellData.getValue().getLastnikPriimek()
+        ));
 
         TableColumn<Ordinacija, String> columnNaslov = new TableColumn<>("Naslov");
         columnNaslov.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getNaslov()));
-        columnNaslov.setPrefWidth(200);
+        columnNaslov.setPrefWidth(140); // 70% of original 200
 
         TableColumn<Ordinacija, String> columnTelefon = new TableColumn<>("Telefon");
         columnTelefon.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getTelefon()));
 
         TableColumn<Ordinacija, String> columnEmail = new TableColumn<>("Email");
         columnEmail.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getEmail()));
+        columnEmail.setPrefWidth(180); // 120% of original 150
+
+        TableColumn<Ordinacija, String> columnStZaposlenih = new TableColumn<>("Število zaposlenih");
+        columnStZaposlenih.setCellValueFactory(cellData -> new SimpleStringProperty(String.valueOf(cellData.getValue().getStZaposlenih())));
+        columnStZaposlenih.setPrefWidth(120);
 
         TableColumn<Ordinacija, Void> columnUredi = new TableColumn<>("Uredi");
         columnUredi.setCellFactory(param -> new TableCell<>() {
@@ -99,7 +107,7 @@ public class Main extends Application {
             }
         });
 
-        table.getColumns().addAll(columnIme, columnLastnik, columnNaslov, columnTelefon, columnEmail, columnUredi, columnIzbrisi);
+        table.getColumns().addAll(columnIme, columnLastnik, columnNaslov, columnTelefon, columnEmail, columnStZaposlenih, columnUredi, columnIzbrisi);
 
         VBox root = new VBox(table);
 
@@ -110,14 +118,19 @@ public class Main extends Application {
             refreshTable();
         });
 
-        HBox buttonBox = new HBox(10.0, dodajOrdinacijoBtn);
+        Button zaposleniBtn = new Button("Zaposleni");
+        Zaposleni zaposleni = new Zaposleni(); // Ustvarimo objekt razreda Zaposleni
+        zaposleniBtn.setOnAction(event -> {
+            zaposleni.start(new Stage()); // Pokličemo metodo start razreda Zaposleni za prikaz okna zaposlenih
+        });
+
+        HBox buttonBox = new HBox(10.0, dodajOrdinacijoBtn, zaposleniBtn); // Dodamo gumb "zaposleniBtn" v vrstico
         buttonBox.setPadding(new Insets(10.0));
         HBox.setHgrow(dodajOrdinacijoBtn, Priority.ALWAYS);
 
         VBox layout = new VBox(10.0, table, buttonBox);
         layout.setPadding(new Insets(10.0));
-        Scene scene = new Scene(layout, 800, 600);
-
+        Scene scene = new Scene(layout, 1000, 600); // Set width to 100
         primaryStage.setScene(scene);
         primaryStage.setTitle("Ordinacije");
         primaryStage.show();
@@ -130,7 +143,7 @@ public class Main extends Application {
             try (Connection conn = DriverManager.getConnection(PGURL, PGUSER, PGPASSWORD)) {
                 data.clear();
                 String sql = "SELECT o.id, o.ime AS ime_ordinacije, o.naslov AS naslov_ordinacije, o.telefon, o.email, o.st_zaposlenih, o.lastnik_id, " +
-                        "l.ime AS lastnik_ime, l.priimek AS lastnik_priimek " +
+                        "l.ime AS lastnik_ime, l.priimek AS lastnik_priimek, o.kraj_id " +
                         "FROM ordinacije o " +
                         "JOIN lastniki l ON o.lastnik_id = l.id";
                 try (Statement stmt = conn.createStatement();
@@ -145,8 +158,9 @@ public class Main extends Application {
                         int lastnikId = rs.getInt("lastnik_id");
                         String lastnikIme = rs.getString("lastnik_ime");
                         String lastnikPriimek = rs.getString("lastnik_priimek");
+                        int krajId = rs.getInt("kraj_id");
 
-                        data.add(new Ordinacija(id, ime, naslov, telefon, email, stZaposlenih, lastnikId, lastnikIme, lastnikPriimek));
+                        data.add(new Ordinacija(id, ime, naslov, telefon, email, stZaposlenih, lastnikId, lastnikIme, lastnikPriimek, krajId));
                     }
                     Platform.runLater(() -> table.setItems(data));
                 } catch (SQLException se) {
@@ -160,5 +174,9 @@ public class Main extends Application {
 
     private void refreshTable() {
         loadData();
+    }
+
+    public static void main(String[] args) {
+        launch(args);
     }
 }
