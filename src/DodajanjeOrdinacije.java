@@ -1,68 +1,59 @@
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.geometry.Insets;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.TextField;
-import javafx.scene.layout.HBox;
+import javafx.scene.control.*;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 
 public class DodajanjeOrdinacije {
-    private Connection conn;
 
-    public DodajanjeOrdinacije(Connection conn) {
-        this.conn = conn;
-    }
+    private static final String PGURL = "jdbc:postgresql://ep-empty-bonus-a26htj4v.eu-central-1.aws.neon.tech/databaza?sslmode=require";
+    private static final String PGUSER = "databaza_owner";
+    private static final String PGPASSWORD = "p9aAuiRvMYE5";
+    private static final String URL = PGURL;
 
-    public void setConnection(Connection conn) {
-        this.conn = conn;
+    private ObservableList<String> kraji = FXCollections.observableArrayList();
+    private Stage stage;
+
+    public DodajanjeOrdinacije() {
+        fetchKrajiFromDatabase();  // Fetch list of kraji when initializing
     }
 
     public void prikaziOknoDodajanjaOrdinacije() {
-        Stage stage = new Stage();
-        VBox root = new VBox();
+        stage = new Stage();
+        stage.setTitle("Dodajanje Ordinacije");
 
-        HBox imePriimekBox = new HBox(); // Create an HBox for name and surname fields
+        // Creating form elements
+        Label imeLabel = new Label("Ime lastnika:");
         TextField imeField = new TextField();
-        imeField.setPromptText("Ime lastnika");
+
+        Label priimekLabel = new Label("Priimek lastnika:");
         TextField priimekField = new TextField();
-        priimekField.setPromptText("Priimek lastnika");
-        imePriimekBox.getChildren().addAll(imeField, priimekField);
 
+        Label imeOrdinacijeLabel = new Label("Ime ordinacije:");
         TextField imeOrdinacijeField = new TextField();
-        imeOrdinacijeField.setPromptText("Ime ordinacije");
+
+        Label stZaposlenihLabel = new Label("Število zaposlenih:");
         TextField stZaposlenihField = new TextField();
-        stZaposlenihField.setPromptText("Število zaposlenih");
 
+        Label naslovLabel = new Label("Naslov:");
         TextField naslovField = new TextField();
-        naslovField.setPromptText("Naslov ordinacije");
-        TextField telefonField = new TextField();
-        telefonField.setPromptText("Telefon");
-        TextField emailField = new TextField();
-        emailField.setPromptText("Email");
 
+        Label telefonLabel = new Label("Telefon:");
+        TextField telefonField = new TextField();
+
+        Label emailLabel = new Label("Email:");
+        TextField emailField = new TextField();
+
+        Label krajLabel = new Label("Kraj:");
         ComboBox<String> krajComboBox = new ComboBox<>();
-        krajComboBox.setPromptText("Izberite kraj");
-        // Fill the combo box with available cities
-        try {
-            Statement stmt = conn.createStatement();
-            String query = "SELECT ime FROM kraji";
-            var resultSet = stmt.executeQuery(query);
-            while (resultSet.next()) {
-                krajComboBox.getItems().add(resultSet.getString("ime"));
-            }
-            stmt.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        krajComboBox.setItems(kraji);
 
         Button dodajBtn = new Button("Dodaj");
-
         dodajBtn.setOnAction(event -> {
             String imeLastnika = imeField.getText();
             String priimekLastnika = priimekField.getText();
@@ -73,56 +64,155 @@ public class DodajanjeOrdinacije {
             String email = emailField.getText();
             String izbranKraj = krajComboBox.getValue();
 
-            // Check if the connection is not null and both name and surname are provided
-            if (conn != null && !imeLastnika.isEmpty() && !priimekLastnika.isEmpty() && !imeOrdinacije.isEmpty() && izbranKraj != null) {
-                try {
-                    // Insert name and surname into the lastniki table
-                    String insertLastnikSql = "INSERT INTO lastniki (ime, priimek) VALUES (?, ?)";
-                    PreparedStatement pstmt = conn.prepareStatement(insertLastnikSql, Statement.RETURN_GENERATED_KEYS);
-                    pstmt.setString(1, imeLastnika);
-                    pstmt.setString(2, priimekLastnika);
-                    pstmt.executeUpdate();
+            if (izbranKraj != null && !izbranKraj.isEmpty()) {
+                String lastnikId = insertLastnik(imeLastnika, priimekLastnika);
+                if (lastnikId != null) {
+                    String krajId = getKrajId(izbranKraj);
+                    if (krajId != null) {
+                        insertOrdinacija(Integer.parseInt(lastnikId), imeOrdinacije, stZaposlenih, naslov, telefon, email, Integer.parseInt(krajId));
 
-                    // Get the ID of the last inserted row in lastniki table
-                    ResultSet generatedKeys = pstmt.getGeneratedKeys();
-                    int lastnikId = -1;
-                    if (generatedKeys.next()) {
-                        lastnikId = generatedKeys.getInt(1);
+                        // Clear fields after submission
+                        imeField.clear();
+                        priimekField.clear();
+                        imeOrdinacijeField.clear();
+                        stZaposlenihField.clear();
+                        naslovField.clear();
+                        telefonField.clear();
+                        emailField.clear();
+                        krajComboBox.getSelectionModel().clearSelection();
                     }
-
-                    // Get the ID of the selected city from the database
-                    int krajId = -1;
-                    String getKrajIdSql = "SELECT id FROM kraji WHERE ime = ?";
-                    pstmt = conn.prepareStatement(getKrajIdSql);
-                    pstmt.setString(1, izbranKraj);
-                    ResultSet resultSet = pstmt.executeQuery();
-                    if (resultSet.next()) {
-                        krajId = resultSet.getInt("id");
-                    }
-
-                    // Insert other data into the ordinacije table
-                    String insertOrdinacijaSql = "INSERT INTO ordinacije (ime, naslov, telefon, email, st_zaposlenih, lastnik_id, kraj_id) VALUES (?, ?, ?, ?, ?, ?, ?)";
-                    pstmt = conn.prepareStatement(insertOrdinacijaSql);
-                    pstmt.setString(1, imeOrdinacije);
-                    pstmt.setString(2, naslov);
-                    pstmt.setString(3, telefon);
-                    pstmt.setString(4, email);
-                    pstmt.setInt(5, stZaposlenih);
-                    pstmt.setInt(6, lastnikId);
-                    pstmt.setInt(7, krajId);
-                    pstmt.executeUpdate();
-
-                    stage.close(); // Close the window after successful insertion
-                } catch (SQLException e) {
-                    e.printStackTrace();
                 }
+            } else {
+                System.out.println("Prosimo izberite kraj.");
             }
-        });//test
+        });
 
-        root.getChildren().addAll(imePriimekBox, imeOrdinacijeField, stZaposlenihField, naslovField, telefonField, emailField, krajComboBox, dodajBtn);
+        // Layout setup
+        GridPane grid = new GridPane();
+        grid.setPadding(new Insets(10, 10, 10, 10));
+        grid.setVgap(8);
+        grid.setHgap(10);
 
-        Scene scene = new Scene(root, 400, 300);
+        GridPane.setConstraints(imeLabel, 0, 0);
+        GridPane.setConstraints(imeField, 1, 0);
+
+        GridPane.setConstraints(priimekLabel, 0, 1);
+        GridPane.setConstraints(priimekField, 1, 1);
+
+        GridPane.setConstraints(imeOrdinacijeLabel, 0, 2);
+        GridPane.setConstraints(imeOrdinacijeField, 1, 2);
+
+        GridPane.setConstraints(stZaposlenihLabel, 0, 3);
+        GridPane.setConstraints(stZaposlenihField, 1, 3);
+
+        GridPane.setConstraints(naslovLabel, 0, 4);
+        GridPane.setConstraints(naslovField, 1, 4);
+
+        GridPane.setConstraints(telefonLabel, 0, 5);
+        GridPane.setConstraints(telefonField, 1, 5);
+
+        GridPane.setConstraints(emailLabel, 0, 6);
+        GridPane.setConstraints(emailField, 1, 6);
+
+        GridPane.setConstraints(krajLabel, 0, 7);
+        GridPane.setConstraints(krajComboBox, 1, 7);
+
+        GridPane.setConstraints(dodajBtn, 1, 8);
+
+        grid.getChildren().addAll(
+                imeLabel, imeField,
+                priimekLabel, priimekField,
+                imeOrdinacijeLabel, imeOrdinacijeField,
+                stZaposlenihLabel, stZaposlenihField,
+                naslovLabel, naslovField,
+                telefonLabel, telefonField,
+                emailLabel, emailField,
+                krajLabel, krajComboBox,
+                dodajBtn
+        );
+
+        VBox layout = new VBox(10);
+        layout.getChildren().addAll(grid);
+        Scene scene = new Scene(layout, 400, 400);
         stage.setScene(scene);
         stage.show();
     }
+
+    private void fetchKrajiFromDatabase() {
+        try (Connection connection = DriverManager.getConnection(URL, PGUSER, PGPASSWORD);
+             Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery("SELECT ime FROM kraji")) {
+
+            kraji.clear();
+            while (resultSet.next()) {
+                kraji.add(resultSet.getString("ime"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private String getKrajId(String krajName) {
+        try (Connection connection = DriverManager.getConnection(URL, PGUSER, PGPASSWORD);
+             PreparedStatement preparedStatement = connection.prepareStatement("SELECT id FROM kraji WHERE ime = ?")) {
+            preparedStatement.setString(1, krajName);
+            try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                if (resultSet.next()) {
+                    return resultSet.getString("id");
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private String insertLastnik(String imeLastnika, String priimekLastnika) {
+        try (Connection connection = DriverManager.getConnection(URL, PGUSER, PGPASSWORD);
+             CallableStatement statement = connection.prepareCall("{ ? = call insert_lastnik(?, ?) }")) {
+
+            statement.registerOutParameter(1, Types.INTEGER);
+            statement.setString(2, imeLastnika);
+            statement.setString(3, priimekLastnika);
+            statement.execute();
+
+            int lastnikId = statement.getInt(1);
+            if (lastnikId > 0) {
+                System.out.println("Lastnik inserted successfully!");
+                return String.valueOf(lastnikId);
+            } else {
+                System.out.println("Failed to insert lastnik.");
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private void insertOrdinacija(int lastnikId, String imeOrdinacije, int stZaposlenih, String naslov, String telefon, String email, int krajId) {
+        try (Connection connection = DriverManager.getConnection(URL, PGUSER, PGPASSWORD);
+             CallableStatement statement = connection.prepareCall("{ ? = call insert_ordinacija(?, ?, ?, ?, ?, ?, ?) }")) {
+
+            statement.registerOutParameter(1, Types.INTEGER);
+            statement.setInt(2, lastnikId);
+            statement.setString(3, imeOrdinacije);
+            statement.setInt(4, stZaposlenih);
+            statement.setString(5, naslov);
+            statement.setInt(6, Integer.parseInt(telefon)); // Pretvori telefon v integer
+            statement.setString(7, email);
+            statement.setInt(8, krajId);
+            statement.execute();
+
+            int ordinacijaId = statement.getInt(1);
+            if (ordinacijaId > 0) {
+                System.out.println("Ordinacija inserted successfully!");
+            } else {
+                System.out.println("Failed to insert ordinacija.");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
 }
