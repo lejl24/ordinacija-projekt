@@ -4,6 +4,7 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.layout.VBox;
@@ -46,7 +47,14 @@ public class Zaposleni extends Application {
 
         table.getColumns().addAll(columnIme, columnPriimek, columnPolozaj, columnOrdinacija);
 
-        VBox root = new VBox(table);
+        Button dodajButton = new Button("Dodaj");
+        dodajButton.setOnAction(event -> {
+            DodajanjeZaposlenega dodajanjeZaposlenega = new DodajanjeZaposlenega();
+            dodajanjeZaposlenega.prikaziOknoDodajanjaZaposlenega();
+        });
+
+        VBox root = new VBox();
+        root.getChildren().addAll(table, dodajButton);
 
         Scene scene = new Scene(root, 600, 400);
 
@@ -103,7 +111,6 @@ public class Zaposleni extends Application {
         launch(args);
     }
 
-    // Define the Zaposlen class here
     public static class Zaposlen {
         private final String ime;
         private final String priimek;
