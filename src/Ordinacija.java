@@ -8,8 +8,9 @@ public class Ordinacija {
     private int lastnikId;
     private String lastnikIme;
     private String lastnikPriimek;
+    private int krajId; // Dodan atribut za kraj
 
-    public Ordinacija(int id, String ime, String naslov, String telefon, String email, int stZaposlenih, int lastnikId, String lastnikIme, String lastnikPriimek) {
+    public Ordinacija(int id, String ime, String naslov, String telefon, String email, int stZaposlenih, int lastnikId, String lastnikIme, String lastnikPriimek, int krajId) {
         this.id = id;
         this.ime = ime;
         this.naslov = naslov;
@@ -19,6 +20,7 @@ public class Ordinacija {
         this.lastnikId = lastnikId;
         this.lastnikIme = lastnikIme;
         this.lastnikPriimek = lastnikPriimek;
+        this.krajId = krajId; // Inicializacija novega atributa
     }
 
     public int getId() {
@@ -55,5 +57,9 @@ public class Ordinacija {
 
     public String getLastnikPriimek() {
         return lastnikPriimek;
+    }
+
+    public int getKrajId() {
+        return krajId;
     }
 }
